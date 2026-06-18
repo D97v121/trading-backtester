@@ -2,7 +2,7 @@
 
 A full-stack web application that simulates algorithmic trading strategies against historical stock data and compares performance against a buy-and-hold benchmark.
 
-**Live demo:** coming soon
+**Live demo:** https://trading-backtester-y5ec.onrender.com/
 
 <img width="1015" height="587" alt="Screenshot 2026-06-18 at 11 35 36 AM" src="https://github.com/user-attachments/assets/bb395055-92b6-42c8-a68f-a031c228c6cc" />
 
