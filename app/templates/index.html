@@ -101,35 +101,41 @@
     </div>
 
     <!-- Metrics -->
-    <div class="row g-3 mb-4" id="metrics" style="display:none!important">
-        <div class="col-md-2">
-            <div class="card p-3 metric-card">
-                <div class="metric-label">Total Return</div>
-                <div class="metric-value" id="total_return">--</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card p-3 metric-card">
-                <div class="metric-label">Annualized Return</div>
-                <div class="metric-value" id="annualized_return">--</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card p-3 metric-card">
-                <div class="metric-label">Sharpe Ratio</div>
-                <div class="metric-value" id="sharpe_ratio">--</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card p-3 metric-card">
-                <div class="metric-label">Max Drawdown</div>
-                <div class="metric-value" id="max_drawdown">--</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card p-3 metric-card">
-                <div class="metric-label">Final Value</div>
-                <div class="metric-value" id="final_value">--</div>
+    <div id="metrics" style="display:none">
+        <div class="row g-3 mb-2">
+            <div class="col-12">
+                <div class="card p-3">
+                    <div class="row text-center">
+                        <div class="col-2"></div>
+                        <div class="col-5" style="color: #4a9eff; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.8px;">Strategy</div>
+                        <div class="col-5" style="color: #00e676; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.8px;">Buy & Hold</div>
+                    </div>
+                    <div class="row text-center align-items-center py-2" style="border-top: 1px solid #2e3250; margin-top: 8px;">
+                        <div class="col-2 text-start" style="color: #8892b0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px;">Total Return</div>
+                        <div class="col-5"><span class="metric-value" id="total_return">--</span></div>
+                        <div class="col-5"><span class="metric-value" id="bh_total_return">--</span></div>
+                    </div>
+                    <div class="row text-center align-items-center py-2" style="border-top: 1px solid #2e3250;">
+                        <div class="col-2 text-start" style="color: #8892b0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px;">Annualized Return</div>
+                        <div class="col-5"><span class="metric-value" id="annualized_return">--</span></div>
+                        <div class="col-5"><span class="metric-value" id="bh_annualized_return">--</span></div>
+                    </div>
+                    <div class="row text-center align-items-center py-2" style="border-top: 1px solid #2e3250;">
+                        <div class="col-2 text-start" style="color: #8892b0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px;">Sharpe Ratio</div>
+                        <div class="col-5"><span class="metric-value" id="sharpe_ratio">--</span></div>
+                        <div class="col-5"><span class="metric-value" id="bh_sharpe_ratio">--</span></div>
+                    </div>
+                    <div class="row text-center align-items-center py-2" style="border-top: 1px solid #2e3250;">
+                        <div class="col-2 text-start" style="color: #8892b0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px;">Max Drawdown</div>
+                        <div class="col-5"><span class="metric-value" id="max_drawdown">--</span></div>
+                        <div class="col-5"><span class="metric-value" id="bh_max_drawdown">--</span></div>
+                    </div>
+                    <div class="row text-center align-items-center py-2" style="border-top: 1px solid #2e3250;">
+                        <div class="col-2 text-start" style="color: #8892b0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px;">Final Value</div>
+                        <div class="col-5"><span class="metric-value" id="final_value">--</span></div>
+                        <div class="col-5"><span class="metric-value" id="bh_final_value">--</span></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -187,7 +193,7 @@ async function runBacktest() {
             return;
         }
 
-        displayMetrics(data.metrics);
+        displayMetrics(data.metrics, data.bh_metrics);
         displayChart(data.portfolio, data.buy_and_hold);
         displayTrades(data.trades);
 
@@ -199,30 +205,40 @@ async function runBacktest() {
     }
 }
 
-function displayMetrics(metrics) {
-    document.getElementById('metrics').style.display = 'flex';
+function displayMetrics(metrics, bhMetrics) {
+    document.getElementById('metrics').style.display = 'block';
 
-    const totalReturn = metrics.total_return;
-    const el = document.getElementById('total_return');
-    el.textContent = totalReturn.toFixed(2) + '%';
-    el.className = 'metric-value ' + (totalReturn >= 0 ? 'positive' : 'negative');
+    function setMetric(id, value, isPositiveGood = true) {
+        const el = document.getElementById(id);
+        el.textContent = typeof value === 'number' && id.includes('value') 
+            ? '$' + value.toLocaleString()
+            : value.toFixed(2) + (id.includes('value') ? '' : id.includes('sharpe') ? '' : '%');
+        if (id.includes('value')) {
+            el.textContent = '$' + value.toLocaleString();
+            el.className = 'metric-value';
+        } else if (id.includes('sharpe')) {
+            el.textContent = value.toFixed(2);
+            el.className = 'metric-value ' + (value >= 1 ? 'positive' : value >= 0 ? '' : 'negative');
+        } else if (id.includes('drawdown')) {
+            el.textContent = value.toFixed(2) + '%';
+            el.className = 'metric-value negative';
+        } else {
+            el.textContent = value.toFixed(2) + '%';
+            el.className = 'metric-value ' + (value >= 0 ? 'positive' : 'negative');
+        }
+    }
 
-    const annReturn = metrics.annualized_return;
-    const annEl = document.getElementById('annualized_return');
-    annEl.textContent = annReturn.toFixed(2) + '%';
-    annEl.className = 'metric-value ' + (annReturn >= 0 ? 'positive' : 'negative');
+    setMetric('total_return', metrics.total_return);
+    setMetric('annualized_return', metrics.annualized_return);
+    setMetric('sharpe_ratio', metrics.sharpe_ratio);
+    setMetric('max_drawdown', metrics.max_drawdown);
+    setMetric('final_value', metrics.final_value);
 
-    const sharpe = metrics.sharpe_ratio;
-    const sharpeEl = document.getElementById('sharpe_ratio');
-    sharpeEl.textContent = sharpe.toFixed(2);
-    sharpeEl.className = 'metric-value ' + (sharpe >= 1 ? 'positive' : sharpe >= 0 ? '' : 'negative');
-
-    const drawdown = metrics.max_drawdown;
-    const drawdownEl = document.getElementById('max_drawdown');
-    drawdownEl.textContent = drawdown.toFixed(2) + '%';
-    drawdownEl.className = 'metric-value negative';
-
-    document.getElementById('final_value').textContent = '$' + metrics.final_value.toLocaleString();
+    setMetric('bh_total_return', bhMetrics.total_return);
+    setMetric('bh_annualized_return', bhMetrics.annualized_return);
+    setMetric('bh_sharpe_ratio', bhMetrics.sharpe_ratio);
+    setMetric('bh_max_drawdown', bhMetrics.max_drawdown);
+    setMetric('bh_final_value', bhMetrics.final_value);
 }
 
 function displayChart(portfolio, buyAndHold) {

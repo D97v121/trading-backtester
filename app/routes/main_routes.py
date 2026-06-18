@@ -3,6 +3,7 @@ from app.data.fetcher import fetch_data
 from app.backtester.engine import Backtester
 from app.backtester.strategies import sma_crossover, rsi_strategy, bollinger_bands
 import pandas as pd
+import numpy as np
 
 main_bp = Blueprint('main', __name__)
 
@@ -65,8 +66,27 @@ def run_backtest():
             value = shares_bh * price
             buy_and_hold.append({'date': str(date), 'value': round(float(value), 2) if not pd.isna(value) else 0})
 
+        # Calculate buy and hold metrics
+        bh_series = pd.Series([item['value'] for item in buy_and_hold])
+        bh_total_return = (bh_series.iloc[-1] - starting_capital) / starting_capital * 100
+        bh_daily_returns = bh_series.pct_change().dropna()
+        bh_sharpe = (bh_daily_returns.mean() / bh_daily_returns.std()) * np.sqrt(252) if bh_daily_returns.std() != 0 else 0
+        bh_rolling_max = bh_series.cummax()
+        bh_drawdown = (bh_series - bh_rolling_max) / bh_rolling_max
+        bh_max_drawdown = bh_drawdown.min() * 100
+        bh_annualized = ((bh_series.iloc[-1] / starting_capital) ** (252 / len(bh_series)) - 1) * 100
+
+        bh_metrics = {
+            'total_return': round(float(bh_total_return), 2),
+            'annualized_return': round(float(bh_annualized), 2),
+            'sharpe_ratio': round(float(bh_sharpe), 2),
+            'max_drawdown': round(float(bh_max_drawdown), 2),
+            'final_value': round(float(bh_series.iloc[-1]), 2)
+        }
+
         return jsonify({
             'metrics': {k: float(v) if not pd.isna(v) else 0 for k, v in results['metrics'].items()},
+            'bh_metrics': bh_metrics,
             'portfolio': portfolio.to_dict(orient='records'),
             'trades': trades_list,
             'buy_and_hold': buy_and_hold
